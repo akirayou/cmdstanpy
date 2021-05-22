@@ -29,9 +29,23 @@ from cmdstanpy import (
 )
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
-TERMINAL_ENCODING = sys.stdin.encoding
-if 'CMDSTAN_ENCODING' in os.environ :
-    TERMINAL_ENCODING = os.environ['CMDSTAN_ENCODING']
+
+TERMINRL_ENCODING=sys.stdin.encoding # You can set this by PYTHONIOENCODING Environment
+if platform.system()=="Windows": # In case of windows, you have to get terminal encoding with Win32API
+    import win32console
+    #https://docs.python.org/3/library/codecs.html#standard-encodings
+    cp_to_enc={37:"cp037",273:"cp273",424:"cp424",437:"cp437",500:"cp500",720:"cp720",
+        737:"cp737",775:"cp775",850:"cp850",852:"cp852",855:"cp855",856:"cp856",
+        857:"cp857",858:"cp858",860:"cp860",861:"cp861",862:"cp862",863:"cp863",
+        864:"cp864",865:"cp865",866:"cp866",869:"cp869",874:"cp874",875:"cp875",
+        932:"cp932",949:"cp949",950:"cp950",1006:"cp1006",1026:"cp1026",1125:"cp1125",
+        1140:"cp1140",1250:"cp1250",1251:"cp1251",1252:"cp1252",1253:"cp1253",
+        1254:"cp1254",1255:"cp1255",1256:"cp1256",1257:"cp1257",1258:"cp1258",
+        936:"gbk",819:"latin_1",1361:"johab",154:"ptcp154",65001:"utf-8",20127:"ascii",
+        }
+    if win32console.GetConsoleCP() in cp_to_enc:
+        TERMINAL_ENCODING=cp_to_enc[win32console.GetConsoleCP()]  
+
 
 def get_logger():
     """cmdstanpy logger"""
