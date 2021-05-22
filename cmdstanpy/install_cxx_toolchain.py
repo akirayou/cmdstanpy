@@ -24,7 +24,7 @@ from collections import OrderedDict
 from time import sleep
 
 from cmdstanpy import _DOT_CMDSTAN, _DOT_CMDSTANPY
-from cmdstanpy.utils import validate_dir
+from cmdstanpy.utils import validate_dir,TERMINAL_ENCODING
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 IS_64BITS = sys.maxsize > 2 ** 32
@@ -95,14 +95,14 @@ def install_version(
             env=os.environ,
         )
         while proc.poll() is None:
-            output = proc.stdout.readline().decode('utf-8').strip()
+            output = proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore').strip()
             if output and verbose:
                 print(output, flush=True)
         _, stderr = proc.communicate()
         if proc.returncode:
             print('Installation failed: returncode={}'.format(proc.returncode))
             if stderr:
-                print(stderr.decode('utf-8').strip())
+                print(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
             if is_installed(installation_dir, version):
                 print('Installation files found at the installation location.')
             sys.exit(3)
@@ -146,7 +146,7 @@ def install_mingw32_make(toolchain_loc, verbose=False):
             env=os.environ,
         )
         while proc.poll() is None:
-            output = proc.stdout.readline().decode('utf-8').strip()
+            output = proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore').strip()
             if output and verbose:
                 print(output, flush=True)
         _, stderr = proc.communicate()
@@ -157,7 +157,7 @@ def install_mingw32_make(toolchain_loc, verbose=False):
                 )
             )
             if stderr:
-                print(stderr.decode('utf-8').strip())
+                print(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
             sys.exit(3)
     print('Installed mingw32-make.exe')
 

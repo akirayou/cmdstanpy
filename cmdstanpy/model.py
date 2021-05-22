@@ -36,6 +36,7 @@ from cmdstanpy.utils import (
     do_command,
     get_logger,
     scan_sampler_csv,
+    TERMINAL_ENCODING,
 )
 
 
@@ -1185,10 +1186,10 @@ class CmdStanModel:
             runset._set_retcode(idx, proc.returncode)
             if stdout:
                 with open(runset.stdout_files[idx], 'w+') as fd:
-                    fd.write(stdout.decode('utf-8'))
+                    fd.write(stdout.decode(TERMINAL_ENCODING, errors='ignore'))
             console_error = ''
             if stderr:
-                console_error = stderr.decode('utf-8')
+                console_error = stderr.decode(TERMINAL_ENCODING, errors='ignore')
                 with open(runset.stderr_files[idx], 'w+') as fd:
                     fd.write(console_error)
 

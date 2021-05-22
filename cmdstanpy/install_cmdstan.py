@@ -31,7 +31,7 @@ from pathlib import Path
 from time import sleep
 
 from cmdstanpy import _DOT_CMDSTAN, _DOT_CMDSTANPY
-from cmdstanpy.utils import validate_dir
+from cmdstanpy.utils import validate_dir,TERMINAL_ENCODING
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
 
@@ -104,14 +104,14 @@ def install_version(
                 env=os.environ,
             )
             while proc.poll() is None:
-                output = proc.stdout.readline().decode('utf-8').strip()
+                output = proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore').strip()
                 if verbose and output:
                     print(output, flush=True)
             _, stderr = proc.communicate()
             if proc.returncode:
                 msgs = ['Command "make clean-all" failed']
                 if stderr:
-                    msgs.append(stderr.decode('utf-8').strip())
+                    msgs.append(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
                 raise CmdStanInstallError('\n'.join(msgs))
             print('Rebuilding version {}'.format(cmdstan_version))
         cmd = [make, 'build']
@@ -124,14 +124,14 @@ def install_version(
             env=os.environ,
         )
         while proc.poll() is None:
-            output = proc.stdout.readline().decode('utf-8').strip()
+            output = proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore').strip()
             if verbose and output:
                 print(output, flush=True)
         _, stderr = proc.communicate()
         if proc.returncode:
             msgs = ['Command "make build" failed']
             if stderr:
-                msgs.append(stderr.decode('utf-8').strip())
+                msgs.append(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
             raise CmdStanInstallError('\n'.join(msgs))
         print('Test model compilation')
         cmd = [
@@ -161,12 +161,12 @@ def install_version(
             env=os.environ,
         )
         while proc.poll() is None:
-            proc.stdout.readline().decode('utf-8')
+            proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore')
         _, stderr = proc.communicate()
         if proc.returncode:
             msgs = ['Failed to compile example model bernoulli.stan']
             if stderr:
-                msgs.append(stderr.decode('utf-8').strip())
+                msgs.append(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
             raise CmdStanInstallError('\n'.join(msgs))
     print('Installed {}'.format(cmdstan_version))
 

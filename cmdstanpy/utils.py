@@ -29,7 +29,9 @@ from cmdstanpy import (
 )
 
 EXTENSION = '.exe' if platform.system() == 'Windows' else ''
-
+TERMINAL_ENCODING = sys.stdin.encoding
+if 'CMDSTAN_ENCODING' in os.environ :
+    TERMINAL_ENCODING = os.environ['CMDSTAN_ENCODING']
 
 def get_logger():
     """cmdstanpy logger"""
@@ -864,16 +866,16 @@ def do_command(cmd: str, cwd: str = None, logger: logging.Logger = None) -> str:
                 msg = '{}, error: {}'.format(msg, serror)
             if stderr:
                 msg = '{}, stderr: {} '.format(
-                    msg, stderr.decode('utf-8').strip()
+                    msg, stderr.decode(TERMINAL_ENCODING, errors='ignore').strip()
                 )
             raise RuntimeError(msg)
         if stdout or stderr:  # success, return stdout, stderr, if any
             msg = ''
             if stdout:
-                msg = '{}'.format(stdout.decode('utf-8').strip())
+                msg = '{}'.format(stdout.decode(TERMINAL_ENCODING, errors='ignore').strip())
             if stderr:
                 msg = '{}\nWarning or error:\t{}'.format(
-                    msg, stderr.decode('utf-8').strip()
+                    msg, stderr.decode(TERMINAL_ENCODING, errors='ignore').strip()
                 )
             return msg
     except OSError as e:
@@ -1004,13 +1006,13 @@ def install_cmdstan(
         env=os.environ,
     )
     while proc.poll() is None:
-        print(proc.stdout.readline().decode('utf-8').strip())
+        print(proc.stdout.readline().decode(TERMINAL_ENCODING, errors='ignore').strip())
 
     _, stderr = proc.communicate()
     if proc.returncode:
         logger.warning('CmdStan installation failed.')
         if stderr:
-            logger.warning(stderr.decode('utf-8').strip())
+            logger.warning(stderr.decode(TERMINAL_ENCODING, errors='ignore').strip())
         return False
     return True
 
