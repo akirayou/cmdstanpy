@@ -50,12 +50,14 @@ class CmdStanModelTest(unittest.TestCase):
     def show_cmdstan_version(self):
         print('\n\nCmdStan version: {}\n\n'.format(cmdstan_path()))
         self.assertTrue(True)
+    def assertSameFile(self,file1,file2):
+        self.assertEqual(os.path.normcase(os.path.abspath(file1)),os.path.normcase(os.path.abspath(file2)) )
 
     def test_model_good(self):
         # compile on instantiation, override model name
         model = CmdStanModel(model_name='bern', stan_file=BERN_STAN)
-        self.assertEqual(BERN_STAN, model.stan_file)
-        self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        self.assertSameFile(BERN_STAN, model.stan_file)
+        self.assertSameFile(model.exe_file,BERN_EXE)
         self.assertEqual('bern', model.name)
 
         # default model name
@@ -64,12 +66,12 @@ class CmdStanModelTest(unittest.TestCase):
 
         # instantiate with existing exe
         model = CmdStanModel(stan_file=BERN_STAN, exe_file=BERN_EXE)
-        self.assertEqual(BERN_STAN, model.stan_file)
-        self.assertTrue(model.exe_file.endswith(BERN_EXE))
-
+        self.assertSameFile(BERN_STAN, model.stan_file)
+        self.assertSameFile(model.exe_file,BERN_EXE)
+ 
         # instantiate with existing exe only - no model
         model2 = CmdStanModel(exe_file=BERN_EXE)
-        self.assertEqual(BERN_EXE, model2.exe_file)
+        self.assertSameFile(BERN_EXE, model2.exe_file)
         with self.assertRaises(RuntimeError):
             model2.code()
         with self.assertRaises(RuntimeError):
@@ -78,8 +80,8 @@ class CmdStanModelTest(unittest.TestCase):
         # instantiate, don't compile
         os.remove(BERN_EXE)
         model = CmdStanModel(stan_file=BERN_STAN, compile=False)
-        self.assertEqual(BERN_STAN, model.stan_file)
-        self.assertEqual(None, model.exe_file)
+        self.assertSameFile(BERN_STAN, model.stan_file)
+        self.assertEqual(None,model.exe_file)
 
     def test_model_bad(self):
         with self.assertRaises(ValueError):
@@ -213,10 +215,12 @@ class CmdStanModelTest(unittest.TestCase):
 
     def test_model_compile(self):
         model = CmdStanModel(stan_file=BERN_STAN)
-        self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        #self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        self.assertSameFile(model.exe_file,BERN_EXE)
 
         model = CmdStanModel(stan_file=BERN_STAN)
-        self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        #self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        self.assertSameFile(model.exe_file,BERN_EXE)
         old_exe_time = os.path.getmtime(model.exe_file)
         os.remove(BERN_EXE)
         model.compile()
@@ -260,8 +264,10 @@ class CmdStanModelTest(unittest.TestCase):
         model = CmdStanModel(
             stan_file=BERN_STAN, stanc_options={'include_paths': DATAFILES_PATH}
         )
-        self.assertEqual(BERN_STAN, model.stan_file)
-        self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        #self.assertEqual(BERN_STAN, model.stan_file)
+        self.assertSameFile(BERN_STAN, model.stan_file)
+        #self.assertTrue(model.exe_file.endswith(BERN_EXE.replace('\\', '/')))
+        self.assertSameFile(model.exe_file,BERN_EXE)
 
     def test_model_includes_implicit(self):
         stan = os.path.join(DATAFILES_PATH, 'bernoulli_include.stan')
@@ -269,7 +275,8 @@ class CmdStanModelTest(unittest.TestCase):
         if os.path.exists(exe):
             os.remove(exe)
         model2 = CmdStanModel(stan_file=stan)
-        self.assertTrue(model2.exe_file.endswith(exe.replace('\\', '/')))
+        #self.assertTrue(model2.exe_file.endswith(exe.replace('\\', '/')))
+        self.assertSameFile(model2.exe_file,exe)
 
     def test_read_progress(self):
         model = CmdStanModel(stan_file=BERN_STAN, compile=False)

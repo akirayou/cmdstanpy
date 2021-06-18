@@ -12,6 +12,7 @@ from multiprocessing import cpu_count
 from numbers import Real
 from pathlib import Path
 from typing import Any, Dict, List, Union
+import tempfile
 
 from cmdstanpy.cmdstan_args import (
     CmdStanArgs,
@@ -36,6 +37,7 @@ from cmdstanpy.utils import (
     do_command,
     get_logger,
     scan_sampler_csv,
+    TERMINAL_ENCODING,
 )
 
 
@@ -1199,43 +1201,49 @@ class CmdStanModel:
         )
         self._logger.debug('sampling: %s', cmd)
         try:
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env=os.environ,
-            )
-            if pbar:
-                stdout_pbar = self._read_progress(proc, pbar, idx)
-            stdout, stderr = proc.communicate()
-            if pbar:
-                stdout = stdout_pbar + stdout
+            with tempfile.TemporaryFile() as stderr_io:
+                proc = subprocess.Popen(
+                    cmd,
+                    #stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=stderr_io,
+                    encoding=TERMINAL_ENCODING, errors='replace',
+                    #env=os.environ,
+                )
+                if pbar:
+                    stdout_pbar = self._read_progress(proc, pbar, idx)
+                stdout, _ = proc.communicate()
+                stderr_io.seek(0)
+                stderr=stderr_io.read().decode(encoding=TERMINAL_ENCODING, errors='replace')
+                if pbar:
+                    stdout = stdout_pbar + stdout
 
-            self._logger.info('finish chain %u', idx + 1)
-            runset._set_retcode(idx, proc.returncode)
-            if stdout:
-                with open(runset.stdout_files[idx], 'w+') as fd:
-                    fd.write(stdout.decode('utf-8'))
-            console_error = ''
-            if stderr:
-                console_error = stderr.decode('utf-8')
-                with open(runset.stderr_files[idx], 'w+') as fd:
-                    fd.write(console_error)
-
-            if proc.returncode != 0:
-                if proc.returncode < 0:
-                    msg = 'Chain {} terminated by signal {}'.format(
-                        idx + 1, proc.returncode
-                    )
-                else:
-                    msg = 'Chain {} processing error'.format(idx + 1)
-                    msg = '{}, non-zero return code {}'.format(
-                        msg, proc.returncode
-                    )
-                if len(console_error) > 0:
-                    msg = '{}\n error message:\n\t{}'.format(msg, console_error)
-                self._logger.error(msg)
+                self._logger.info('finish chain %u', idx + 1)
+                runset._set_retcode(idx, proc.returncode)
+                if stdout:
+                    with open(runset.stdout_files[idx], 'w+') as fd:
+                        fd.write(stdout)
+                console_error = ''
+                if stderr:
+                    console_error = stderr
+                    with open(runset.stderr_files[idx], 'w+') as fd:
+                        fd.write(console_error)
+                        fd.close()
+                    self._logger.error(console_error)
+                
+                if proc.returncode != 0:
+                    if proc.returncode < 0:
+                        msg = 'Chain {} terminated by signal {}'.format(
+                            idx + 1, proc.returncode
+                        )
+                    else:
+                        msg = 'Chain {} processing error'.format(idx + 1)
+                        msg = '{}, non-zero return code {}'.format(
+                            msg, proc.returncode
+                        )
+                    if len(console_error) > 0:
+                        msg = '{}\n error message:\n\t{}'.format(msg, console_error)
+                    self._logger.error(msg)
 
         except OSError as e:
             msg = 'Chain {} encounted error: {}\n'.format(idx + 1, str(e))
@@ -1255,7 +1263,7 @@ class CmdStanModel:
         )
         pattern_compiled = re.compile(pattern, flags=re.IGNORECASE)
         previous_count = 0
-        stdout = b''
+        stdout = ''
         changed_description = False  # Changed from 'warmup' to 'sample'
         pbar.set_description(desc=f'Chain {idx + 1} - warmup', refresh=True)
 
@@ -1264,7 +1272,7 @@ class CmdStanModel:
             while proc.poll() is None:
                 output = proc.stdout.readline()
                 stdout += output
-                output = output.decode('utf-8').strip()
+                output = output.strip()
                 if output.startswith('Iteration'):
                     match = re.search(pattern_compiled, output)
                     if match:
